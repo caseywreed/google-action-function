@@ -48,4 +48,3 @@ Voxable builds chatbots, voice interface, Alexa skills, and Google Assistant app
 <a href="https://voxable.io"><img title="Voxable logo" src="https://cdn.glitch.com/216ad9f8-8b2b-4a63-b11a-675087c02c37%2Fvoxable-logo.png?1495696923680" /></a>
 
 Actions on Google and Google Assistant are property of Google, Inc. and are for identification purposes only. Use of these names does not imply endorsement.
-# google-action-function

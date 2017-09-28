@@ -8,6 +8,7 @@ const bodyParser = require('body-parser');
 const request = require('request');
 const app = express();
 const Map = require('es6-map');
+const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1ODkyMmRmOGM4ZWJmNDJkN2I5NmE2YWYiLCJlbWFpbCI6ImRlbW9Ac3BsaXRzZWNuZC5jb20iLCJmaXJzdE5hbWUiOiJFbGxpcyIsImxhc3ROYW1lIjoiTmljaG9scyIsImNyZWF0ZWRBdCI6MTQ4NTk3NTAzMjI3MywiaWF0IjoxNTA2NjEyNzMxLCJleHAiOjE1MDY2NTU5MzF9.qAkMYylJWdwC6KE4oMBMBZXmSaCYLIuoaL9cPRa8AiE'
 
 // Pretty JSON output for logs
 const prettyjson = require('prettyjson');
@@ -74,7 +75,7 @@ app.post('/', function(req, res, next) {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Authorization': process.env.TOKEN
+        'Authorization': token
       }
     };
     
@@ -103,7 +104,7 @@ app.post('/', function(req, res, next) {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Authorization': process.env.TOKEN
+        'Authorization': token
       }
     };
     
@@ -134,7 +135,7 @@ app.post('/', function(req, res, next) {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Authorization': process.env.TOKEN
+        'Authorization': token
       }
     };
     

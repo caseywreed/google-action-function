@@ -4,10 +4,13 @@
 // init project
 const express = require('express');
 const ApiAiAssistant = require('actions-on-google').ApiAiAssistant;
+const ApiAiApp = require('actions-on-google').ApiAiApp;
 const bodyParser = require('body-parser');
 const request = require('request');
 const app = express();
 const Map = require('es6-map');
+let token = null
+
 
 // Pretty JSON output for logs
 const prettyjson = require('prettyjson');
@@ -24,9 +27,9 @@ app.use(bodyParser.json({type: 'application/json'}));
 app.use(express.static('public'));
 
 // http://expressjs.com/en/starter/basic-routing.html
-app.get("/", function (request, response) {
-  response.sendFile(__dirname + '/views/index.html');
-});
+// app.get("/", function (request, response) {
+//   response.sendFile(__dirname + '/views/index.html');
+// });
 
 // Uncomment the below function to check the authenticity of the API.AI requests.
 // See https://docs.api.ai/docs/webhook#section-authentication
@@ -51,15 +54,12 @@ app.post('/', function(req, res, next) {
   // webhook requests coming from API.AI by clicking the Logs button the sidebar.
   logObject('Request headers: ', req.headers);
   logObject('Request body: ', req.body);
-  console.log('TOKEN=', process.env.TOKEN);
-    
+  
   // Instantiate a new API.AI assistant object.
   const assistant = new ApiAiAssistant({request: req, response: res});
-
+  const helper = new ApiAiApp({request: req, response: res});
+  token = helper.getUser().access_token
   // Declare constants for your action and parameter names
-  // const ASK_WEATHER_ACTION = 'askWeather';  // The action name from the API.AI intent
-  // const CITY_PARAMETER = 'geo-city'; // An API.ai parameter name
-  
   const STATUS_REPORT_ACTION = 'statusReport';
   const SEARCH_DRIVER_ACTION = 'searchDriver';
   const SAFE_TO_CONTACT_ACTION = 'safeToContact';
@@ -69,22 +69,10 @@ app.post('/', function(req, res, next) {
   
   function statusReport(assistant) {
     console.log('Handling action: ' + STATUS_REPORT_ACTION);
-    const options = {  
-      url: 'https://dashboard-backend.splitsecnd.com/dashboardDevices',
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': process.env.TOKEN
-      }
-    };
-    
-    request(options, function (error, response) {
-      if (error) {
-        next(error)
-      } else {
-        let body = JSON.parse(response.body);
-        logObject('dashboardDevices call response: ', body);
-        let assistantResponseString =  body.devices.map(function (device) {
+    get('/dashboardDevices')
+    .then( deviceData => {
+      logObject('dashboardDevices call response: ', deviceData);
+        let assistantResponseString =  deviceData.devices.map(function (device) {
           return `${device.driver.name} is ${getDriverStatusString(device.status)} near ${formatLocationString(device.location)}`
         }).join(';\n');
         console.log(assistantResponseString);
@@ -92,30 +80,18 @@ app.post('/', function(req, res, next) {
         
         // Respond to the user with the current temperature.
         assistant.tell(assistantResponseString);
-      }
-    });
+    })
   }
+
   
   function searchDriver(assistant) {
-    console.log('Handling action: ' + SEARCH_DRIVER_ACTION);
-    const options = {  
-      url: 'https://dashboard-backend.splitsecnd.com/dashboardDevices',
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': process.env.TOKEN
-      }
-    };
-    
-    request(options, function (error, response) {
-      if (error) {
-        next(error)
-      } else {
-        let body = JSON.parse(response.body);
-        logObject('dashboardDevices call response: ', body);
+    console.log('Handling action: ' + SEARCH_DRIVER_ACTION);    
+    get('/dashboardDevices')
+    .then( deviceData => {
+        logObject('dashboardDevices call response: ', deviceData);
         let driverName = assistant.getArgument(DRIVER_NAME_PARAMETER);
         
-        let requestedDevice =  body.devices.filter(function (device) {
+        let requestedDevice =  deviceData.devices.filter(function (device) {
           return device.driver.name.split(' ')[0] == driverName;
         })[0]
         
@@ -123,32 +99,17 @@ app.post('/', function(req, res, next) {
         
         // Respond to the user with the current temperature.
         assistant.tell(assistantResponseString);
-      }
-    });
+      })
   }
   
   function safeToContact(assistant) {
     console.log('Handling action: ' + SAFE_TO_CONTACT_ACTION);
-    const options = {  
-      url: 'https://dashboard-backend.splitsecnd.com/dashboardDevices',
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': process.env.TOKEN
-      }
-    };
-    
-    request(options, function (error, response) {
-      if (error) {
-        next(error)
-      } else {
-        let body = JSON.parse(response.body);
-        logObject('dashboardDevices call response: ', body);
-        
+    get('/dashboardDevices')
+    .then( deviceData => {
+        logObject('dashboardDevices call response: ', deviceData);
         let assistantResponseString = '';
-        let driverName = assistant.getArgument(DRIVER_NAME_PARAMETER);
-        
-        let requestedDevice =  body.devices.filter(function (device) {
+        const driverName = assistant.getArgument(DRIVER_NAME_PARAMETER);
+        let requestedDevice =  deviceData.devices.filter(function (device) {
           return device.driver.name.split(' ')[0] == driverName;
         })[0]
         
@@ -160,8 +121,7 @@ app.post('/', function(req, res, next) {
         
         // Respond to the user with the current temperature.
         assistant.tell(assistantResponseString);
-      }
-    });
+      })
   }
   
   // Add handler functions to the action router.
@@ -180,6 +140,31 @@ app.use(function (err, req, res, next) {
   console.error(err.stack)
   res.status(500).send('Something broke!')
 })
+
+// NETWORK HELPERS //
+function get(uriTail) {
+    const options = {  
+      baseUrl: 'https://dashboard-backend.splitsecnd.com',
+      uri: uriTail,
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': token
+      }
+    };
+    return new Promise(function(resolve, reject){
+        request(options, function (error, response, body) {
+            // in addition to parsing the value, deal with possible errors
+            if (error) return reject(error);
+            try {
+                // JSON.parse() can throw an exception if not valid JSON
+                resolve(JSON.parse(body));
+            } catch(e) {
+                reject(e);
+            }
+        });
+    });
+}
 
 // Pretty print objects for logging.
 function logObject(message, object, options) {

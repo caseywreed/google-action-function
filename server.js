@@ -9,6 +9,7 @@ const bodyParser = require('body-parser');
 const request = require('request');
 const app = express();
 const Map = require('es6-map');
+
 let token = null
 
 
@@ -89,6 +90,7 @@ app.post('/', function(req, res, next) {
     get('/dashboardDevices')
     .then( deviceData => {
         logObject('dashboardDevices call response: ', deviceData);
+
         let driverName = assistant.getArgument(DRIVER_NAME_PARAMETER);
         
         let requestedDevice =  deviceData.devices.filter(function (device) {

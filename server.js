@@ -96,6 +96,11 @@ app.post('/', function(req, res, next) {
         let requestedDevice =  deviceData.devices.filter(function (device) {
           return device.driver.name.split(' ')[0] == driverName;
         })[0]
+
+        if (!requestedDevice) {
+          let speechOutput = "Sorry, I couldn't find that driver. Try asking again.";
+          assistant.ask(speechOutput);
+        }
         
         let assistantResponseString = `${requestedDevice.driver.name} is ${getDriverStatusString(requestedDevice.status)} near ${formatLocationString(requestedDevice.location)}`
         
@@ -111,9 +116,15 @@ app.post('/', function(req, res, next) {
         logObject('dashboardDevices call response: ', deviceData);
         let assistantResponseString = '';
         const driverName = assistant.getArgument(DRIVER_NAME_PARAMETER);
+        
         let requestedDevice =  deviceData.devices.filter(function (device) {
           return device.driver.name.split(' ')[0] == driverName;
         })[0]
+      
+        if (!requestedDevice) {
+          let speechOutput = "Sorry, I couldn't find that driver. Try asking again.";
+          assistant.ask(speechOutput);
+        }
         
         if (requestedDevice.status == 1 || requestedDevice.status == 2) {
           assistantResponseString = `No, it is not safe to call or text. ${requestedDevice.driver.name.split(' ')[0]} is ${getDriverStatusString(requestedDevice.status)}`
